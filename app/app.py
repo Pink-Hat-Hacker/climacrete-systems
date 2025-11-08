@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import joblib
 import matplotlib.pyplot as plt
+import os
 
 # ----------------------------
 # Styles
@@ -120,8 +121,11 @@ st.markdown("""
 # ----------------------------
 # Load trained models
 # ----------------------------
-strength_model = joblib.load('models/strength_model.pkl')
-durability_model = joblib.load('models/durability_model.pkl')
+STRENGTH_MODEL_PATH = os.path.join(os.path.dirname(__file__), "models/strength_model.pkl")
+DURABILITY_MODEL_PATH = os.path.join(os.path.dirname(__file__), "models/durability_model.pkl")
+
+strength_model = joblib.load(STRENGTH_MODEL_PATH)
+durability_model = joblib.load(DURABILITY_MODEL_PATH)
 
 # ----------------------------
 # Streamlit UI
