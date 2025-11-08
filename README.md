@@ -28,16 +28,6 @@ climacrete/
 └── requirements.txt
 ```
 
-| TIME           | TASK                              | Complete |
-| -------------- | --------------------------------- | -------- |
-| **Hour 0–2**   | Data cleaning & EDA               |✅|
-| **Hour 3–8**  | Train & evaluate models           |✅|
-| **Hour 12–18** | Build Streamlit front-end         ||
-| **Hour 18–24** | Integrate model + rules           ||
-| **Hour 24–36** | Polish UI & add charts            ||
-| **Hour 36–48** | Prep demo, record pitch, test app ||
-
-
 --
 
 ## 01_data_cleaning.ipynb
@@ -48,3 +38,8 @@ climacrete/
 
 ## 02_training_strength_model.ipynb
 > Train a regression model. Predict compressive strength (MPa) based on the cleaned mix design features
+
+--
+## Charts
+![Durability ML Model Chart](imgs/durability_output.png "Durability ML Model Chart")
+![Strength ML Model Chart](imgs/strength_output.png "Strength ML Model Chart")
