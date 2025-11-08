@@ -135,7 +135,7 @@ st.markdown("""
 for various mix designs. It also provides recommended use cases 
 based on performance trade-offs.*
 """)
-st.markdown("---") # This creates a horizontal line
+st.markdown("---")
 # ----------------------------
 # Sidebar Inputs
 # ----------------------------
@@ -205,19 +205,33 @@ if st.sidebar.button("Predict Performance"):
     # --- Display Results ---
     st.subheader("Predicted Performance")
     col1, col2, col3 = st.columns(3)
+    
     col1.metric("Compressive Strength (MPa)", f"{strength:.2f}")
+    col1.markdown(
+        '<span title="Compressive Strength measures how much load concrete can withstand before failing — higher MPa means stronger concrete.">ℹ️</span>',
+        unsafe_allow_html=True
+    )
+    
     col2.metric("Durability Index (0–100)", f"{durability:.1f}")
+    col2.markdown(
+        '<span title="Durability Index is an ML-estimated measure (0–100) of how well the concrete resists weathering, cracking, and chemical attack.">ℹ️</span>', 
+        unsafe_allow_html=True
+    )
+
     col3.metric("CO₂ Reduction vs. OPC (%)", f"{co2_reduction:.1f}")
+    col3.markdown(
+        '<span title="CO₂ Reduction compares your mix’s embodied carbon to traditional Portland cement — higher % means lower climate impact.">ℹ️</span>', 
+        unsafe_allow_html=True
+    )
+    st.markdown("---")
 
     st.markdown(f"### **Recommended Use Case:** {use_case}")
 
+    st.markdown("---")
+
     # --- Visualization: Trade-off Plot ---
-    st.subheader("📈 Strength–Durability Trade-off by SCM Fraction")
-    st.markdown("""
-        <span title="This chart shows how increasing the use of supplementary cementitious materials (SCMs) — like fly ash or slag — affects both concrete strength and durability.">
-            Strength–Durability Trade-off by SCM Fraction
-        </span>
-        """, unsafe_allow_html=True)
+    # st.subheader("Strength–Durability Trade-off by SCM Fraction")
+    st.markdown("## Strength–Durability Trade-off by SCM Fraction <span title='This chart shows how increasing the use of supplementary cementitious materials (SCMs) — like fly ash or slag — affects both concrete strength and durability.'>ℹ️</span>", unsafe_allow_html=True)
 
     scm_range = np.linspace(0, 0.8, 20)
     tradeoff_data = []
