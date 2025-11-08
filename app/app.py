@@ -120,8 +120,8 @@ st.markdown("""
 # ----------------------------
 # Load trained models
 # ----------------------------
-strength_model = joblib.load('../models/strength_model.pkl')
-durability_model = joblib.load('../models/durability_model.pkl')
+strength_model = joblib.load('models/strength_model.pkl')
+durability_model = joblib.load('models/durability_model.pkl')
 
 # ----------------------------
 # Streamlit UI
