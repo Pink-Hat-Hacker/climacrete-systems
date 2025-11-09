@@ -37,7 +37,6 @@ st.markdown("""
 
     /* Subheaders and smaller highlight sections */
     h3, h4 {
-        color: #224130 !important;
         padding: 0.3em 0.5em;
         border-radius: 4px;
         display: inline-block;
