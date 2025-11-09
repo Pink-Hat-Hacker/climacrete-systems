@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import joblib
 import matplotlib.pyplot as plt
+import plotly.express as px
 import os
 
 # ----------------------------
@@ -129,7 +130,6 @@ durability_model = joblib.load(DURABILITY_MODEL_PATH)
 # ----------------------------
 # Streamlit UI
 # ----------------------------
-
 st.title("🪏 ClimaCrete Systems")
 st.subheader("ML-powered Low-Carbon Concrete Performance Predictor")
 
@@ -139,6 +139,7 @@ for various mix designs. It also provides recommended use cases
 based on performance trade-offs.*
 """)
 st.markdown("---")
+
 # ----------------------------
 # Sidebar Inputs
 # ----------------------------
@@ -153,9 +154,20 @@ coarse_agg = st.sidebar.number_input("Coarse Aggregate (kg/m³)", 0.0, 1200.0, 1
 fine_agg = st.sidebar.number_input("Fine Aggregate (kg/m³)", 0.0, 1200.0, 700.0, 10.0)
 age = st.sidebar.slider("Age (days)", 1, 90, 28)
 recycled_agg_pct = st.sidebar.slider("Recycled Aggregate (%)", 0, 100, 0)
-fiber_flag = st.sidebar.selectbox("Fiber Reinforcement", ["No", "Yes"]) == "Yes"
+fiber_flag = st.sidebar.selectbox("Fiber Reinforcement", ["No", "Yes"]) == "Yes" # done
 
-# Derived parameters
+# '''
+# | Input (User Provides)         | Description                 | Derived / Used For                    |
+# | ----------------------------- | --------------------------- | ------------------------------------- |
+# | Cement, Slag, Fly Ash (kg/m³) | Core binder materials       | Determines binder mass & SCM fraction |
+# | Water (kg/m³)                 | Hydration agent             | Used for water/binder ratio           |
+# | Superplasticizer (kg/m³)      | Flow enhancer               | Affects workability                   |
+# | Coarse & Fine Aggregates      | Load distribution & density | Affects strength indirectly           |
+# | Age (days)                    | Curing time                 | Used in both models                   |
+# | Recycled Aggregate (%)        | Sustainability input        | Impacts durability                    |
+# | Fiber Reinforcement           | Cracking resistance         | Impacts durability                    |
+
+# '''
 scm = slag + flyash
 binder = cement + scm
 w_b_ratio = water / binder if binder > 0 else 0
@@ -188,14 +200,22 @@ if st.sidebar.button("Predict Performance"):
     strength = strength_model.predict(input_df)[0]
     durability = durability_model.predict(input_df)[0]
 
-    # --- CO2 Emission Estimation ---
-    # Simple embodied carbon factor (kg CO₂ per kg binder)
-    co2_cement = 0.9      # ordinary Portland cement
-    co2_scm = 0.15        # SCMs (fly ash, slag)
+    # --- CO2 Emission Estimation --- (kg CO₂ per kg binder)
+    co2_cement = 0.9    # portland cement
+    co2_scm = 0.15  # SCMs (fly ash, slag)
     total_co2 = (cement * co2_cement + scm * co2_scm)
     co2_reduction = (1 - total_co2 / (binder * co2_cement)) * 100 if binder > 0 else 0
 
     # --- Recommended Use Case ---
+    # '''
+    # | Category                 | Typical Strength (MPa) | Durability Range | Real-world Examples                               | Reasoning                                                        |
+    # | ------------------------ | ---------------------- | ---------------- | ------------------------------------------------- | ---------------------------------------------------------------- |
+    # | **Structural / Precast** | ≥ 60                   | ≥ 80             | Bridge decks, precast beams, high-rise columns    | High strength + durability needed under heavy loads and exposure |
+    # | **General Structural**   | 40–60                  | 60–80            | Regular reinforced concrete (slabs, walls, beams) | Standard for most building-grade mixes                           |
+    # | **Non-Structural**       | 25–40                  | Any              | Pavements, blocks, fillers                        | Load demands are lower; focus is on workability and cost         |
+    # | **Unsuitable**           | < 25                   | —                | Lightweight or failed mix designs                 | Insufficient strength for most applications                      |
+
+    # '''
     if strength >= 60 and durability >= 80:
         use_case = "🌟 Structural / Precast Elements"
     elif strength >= 40 and durability >= 60:
@@ -205,10 +225,9 @@ if st.sidebar.button("Predict Performance"):
     else:
         use_case = "⚠️ Mix likely unsuitable for most load-bearing uses"
 
-    # --- Display Results ---
+    # --- show results ---
     st.subheader("Predicted Performance")
     col1, col2, col3 = st.columns(3)
-    
     col1.metric("Compressive Strength (MPa)", f"{strength:.2f}")
     col1.markdown(
         '<span title="Compressive Strength measures how much load concrete can withstand before failing — higher MPa means stronger concrete.">ℹ️</span>',
@@ -262,6 +281,93 @@ if st.sidebar.button("Predict Performance"):
 
     fig.tight_layout()
     st.pyplot(fig)
-
     st.caption("Note: SCM (Supplementary Cementitious Materials) such as fly ash or slag generally reduce CO₂ while improving durability but can reduce early strength.")
+
+    st.markdown("### Explore Further Insights")
+
+    # --- Binder Composition by SCM Fraction ---
+    with st.expander("Binder Composition by SCM Fraction", expanded=False):
+        st.markdown(
+            "<span title='This chart shows how the binder composition changes as cement is replaced by supplementary cementitious materials (SCMs) such as slag or fly ash. Higher SCM fractions reduce embodied carbon but may affect strength.'>ℹ️</span>",
+            unsafe_allow_html=True
+        )
+
+        scm_range = np.linspace(0, 0.8, 20)
+        cement_vals, slag_vals, flyash_vals = [], [], []
+
+        for s in scm_range:
+            cement_mass = (1 - s) * binder
+            slag_mass = s * binder * (slag / scm if scm > 0 else 0.5)
+            flyash_mass = s * binder * (flyash / scm if scm > 0 else 0.5)
+            
+            cement_vals.append(cement_mass)
+            slag_vals.append(slag_mass)
+            flyash_vals.append(flyash_mass)
+
+        fig2, ax = plt.subplots(figsize=(8, 5))
+        ax.bar(scm_range, cement_vals, label="Cement", color="#d2491c")
+        ax.bar(scm_range, slag_vals, bottom=cement_vals, label="Slag", color="#9ea2aa")
+        ax.bar(scm_range, flyash_vals, bottom=np.array(cement_vals) + np.array(slag_vals), label="Fly Ash", color="#d6e0a5")
+
+        ax.set_xlabel("SCM Fraction of Binder", color="#e7e9dc")
+        ax.set_ylabel("Binder Composition (kg/m³)", color="#e7e9dc")
+        ax.set_title("Binder Composition vs. SCM Fraction", color="#d6e0a5", pad=10)
+        ax.legend(facecolor="#224130", labelcolor="#d6e0a5")
+        ax.grid(True, color="#9dc038", alpha=0.3)
+        ax.set_facecolor("#224130")
+        fig2.patch.set_facecolor("#224130")
+
+        st.pyplot(fig2)
+    # --- Strength and Durability Over Time ---
+    with st.expander("Strength and Durability Over Time", expanded=False):
+        st.markdown(
+            "<span title='This shows how the concrete’s compressive strength and durability evolve as it cures. It uses the same mix inputs and highlights your selected curing age.'>ℹ️</span>",
+            unsafe_allow_html=True
+        )
+
+        # Age points for the curve
+        age_points = np.array([7, 14, 28, 56, 90])
+        strength_curve, durability_curve = [], []
+
+        for t in age_points:
+            row = input_df.copy()
+            row['age'] = t
+            strength_curve.append(strength_model.predict(row)[0])
+            durability_curve.append(durability_model.predict(row)[0])
+
+        fig3, ax1 = plt.subplots(figsize=(8, 5))
+        ax2 = ax1.twinx()
+        ax1.plot(age_points, strength_curve, color="#d2491c", marker="o", label="Strength (MPa)")
+        ax1.set_xlabel("Age (days)", color="#e7e9dc")
+        ax1.set_ylabel("Compressive Strength (MPa)", color="#d2491c")
+        ax2.plot(age_points, durability_curve, color="#9ea2aa", marker="s", linestyle="--", label="Durability Index")
+        ax2.set_ylabel("Durability Index (0–100)", color="#9ea2aa")
+
+        if 'age' in input_df.columns:
+            age_point = input_df['age'].values[0]
+            if age_point in age_points:
+                idx = np.where(age_points == age_point)[0][0]
+                ax1.scatter(age_point, strength_curve[idx], color="#d2491c", s=80, edgecolor="#e7e9dc", zorder=5)
+                ax2.scatter(age_point, durability_curve[idx], color="#9ea2aa", s=80, edgecolor="#e7e9dc", zorder=5)
+            else:
+                age_interp_strength = np.interp(age_point, age_points, strength_curve)
+                age_interp_durability = np.interp(age_point, age_points, durability_curve)
+                ax1.scatter(age_point, age_interp_strength, color="#d2491c", s=80, edgecolor="#e7e9dc", zorder=5)
+                ax2.scatter(age_point, age_interp_durability, color="#9ea2aa", s=80, edgecolor="#e7e9dc", zorder=5)
+            ax1.axvline(age_point, color="#d6e0a5", linestyle=":", linewidth=1)
+            ax1.text(age_point + 1, ax1.get_ylim()[1]*0.9, f"Age: {int(age_point)} days",
+                     color="#d6e0a5", fontsize=10, va="top")
+
+        # styles
+        ax1.grid(True, color="#9dc038", alpha=0.3)
+        ax1.set_facecolor("#224130")
+        fig3.patch.set_facecolor("#224130")
+
+        lines, labels = ax1.get_legend_handles_labels()
+        lines2, labels2 = ax2.get_legend_handles_labels()
+        ax1.legend(lines + lines2, labels + labels2, loc="best", facecolor="#224130", labelcolor="#d6e0a5")
+
+        st.pyplot(fig3)
+
+        st.caption("Note: Strength typically increases with age as hydration continues, while durability stabilizes once the cement matrix densifies.")
 
