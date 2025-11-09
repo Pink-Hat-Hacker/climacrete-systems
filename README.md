@@ -1,6 +1,6 @@
 # climacrete-systems
 F25 Duke University AI Hackathon
-![smartcrete](img/smart-crete.png)
+![smartcrete](imgs/smart-crete.png)
 
 --
 
