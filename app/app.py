@@ -114,7 +114,7 @@ st.markdown("""
     }
     </style>
     <div class="footer">
-    <p>Developed with ❤ by <a href="https://github.com/pink-hat-hacker" target="_blank">Zoë Valladares</a></p>
+    <p>Developed with ❤ by <a href="https://github.com/pink-hat-hacker" target="_blank">Zoë Valladares</a> & some LLM help ;)</p>
     </div>
 """, unsafe_allow_html=True)
 
