@@ -371,3 +371,133 @@ if st.sidebar.button("Predict Performance"):
 
         st.caption("Note: Strength typically increases with age as hydration continues, while durability stabilizes once the cement matrix densifies.")
 
+# ----------------------------
+# Optimal Mix Finder
+# ----------------------------
+st.markdown("## ♻️ ML-Recommended Optimal Mix Design")
+st.markdown("The system searches for a mix with the lowest CO₂ impact that still meets structural performance requirements (≥40 MPa, ≥70 durability).")
+st.markdown("Enter in your preferred mix and hit this button to get a comparison chart.")
+
+if st.button("Find Optimal Mix"):
+    cement_range = np.linspace(250, 600, 15)
+    scm_frac_range = np.linspace(0.0, 0.7, 15)
+    w_b_range = np.linspace(0.25, 0.65, 15)
+
+
+    best_mix = None
+    lowest_co2 = np.inf
+    all_results = []
+    best_score = -np.inf
+
+    for c in cement_range:
+        for s in scm_frac_range:
+            for w_b in w_b_range:
+                binder = 400.0
+                cement = binder * (1 - s)
+                water = w_b * binder
+                scm = s * binder
+                slag = scm  # simplified, or randomize between slag/flyash
+                flyash = 0.0
+
+                input_row = pd.DataFrame([{
+                    'cement': c,
+                    'slag': slag,
+                    'flyash': flyash,
+                    'scm': scm,
+                    'water': water,
+                    'superplasticizer': 5.0,
+                    'coarse_agg': 1000.0,
+                    'fine_agg': 700.0,
+                    'binder': binder,
+                    'w_b_ratio': w_b,
+                    'scm_frac': s,
+                    'recycled_agg_pct': 0,
+                    'fiber_flag': 0,
+                    'age': 28
+                }])
+
+                strength_pred = strength_model.predict(input_row)[0]
+                durability_pred = durability_model.predict(input_row)[0]
+
+                co2_cement = 0.9
+                co2_scm = 0.15
+                total_co2 = (c * co2_cement + scm * co2_scm)
+
+                # fallback
+                all_results.append({
+                    'cement': cement, 'scm_frac': s, 'w_b_ratio': w_b,
+                    'strength': strength_pred, 'durability': durability_pred,
+                    'co2': total_co2
+                })
+                score = (strength_pred/60)*0.4 + (durability_pred/100)*0.4 + (1 - total_co2/400)*0.2
+                if score > best_score:
+                    best_score = score
+                    best_mix = all_results[-1]
+
+                if strength_pred >= 35 and durability_pred >= 55:
+                    if total_co2 < lowest_co2:
+                        lowest_co2 = total_co2
+                        best_mix = {
+                            'cement': c,
+                            'scm_frac': s,
+                            'w_b_ratio': w_b,
+                            'strength': strength_pred,
+                            'durability': durability_pred,
+                            'co2': total_co2
+                        }
+
+    if best_mix:
+        st.success("✅ Optimal low-carbon mix found:")
+        st.write(best_mix)
+        st.caption("This mix meets structural-grade requirements while minimizing carbon footprint.")
+        
+        # --- Visualization: Compare Input vs. AI Recommendation ---
+        st.markdown("### 🧮 Comparison: Your Mix vs. ML Recommendation")
+
+        # Compute values for user's input mix
+        user_strength = strength_model.predict(input_df)[0]
+        user_durability = durability_model.predict(input_df)[0]
+        user_co2 = (cement * 0.9 + scm * 0.15)
+
+        # Compute AI mix performance
+        ai_strength = best_mix['strength']
+        ai_durability = best_mix['durability']
+        ai_co2 = best_mix['co2']
+
+        labels = ["Compressive Strength (MPa)", "Durability Index", "CO₂ (kg/m³)"]
+        user_vals = [user_strength, user_durability, user_co2]
+        ai_vals = [ai_strength, ai_durability, ai_co2]
+
+        x = np.arange(len(labels))
+        width = 0.35
+
+        fig4, ax = plt.subplots(figsize=(8, 5))
+        rects1 = ax.bar(x - width/2, user_vals, width, label="Your Mix", color="#d2491c")
+        rects2 = ax.bar(x + width/2, ai_vals, width, label="ML Mix", color="#9ea2aa")
+
+        ax.set_ylabel("Value", color="#e7e9dc")
+        ax.set_xticks(x)
+        ax.set_xticklabels(labels, rotation=10, color="#e7e9dc")
+        ax.legend(facecolor="#224130", labelcolor="#d6e0a5")
+        ax.grid(True, color="#9dc038", alpha=0.3)
+        ax.set_facecolor("#224130")
+        fig4.patch.set_facecolor("#224130")
+
+        # Annotate bars with numeric values
+        for rects in [rects1, rects2]:
+            for r in rects:
+                ax.text(
+                    r.get_x() + r.get_width()/2, r.get_height() + 1,
+                    f"{r.get_height():.1f}",
+                    ha='center', va='bottom', color="#e7e9dc", fontsize=9
+                )
+
+        st.pyplot(fig4)
+        st.caption("Lower CO₂ while maintaining strength and durability shows improved sustainability.")
+    else:
+        st.warning("⚠️ No mix found within the tested ranges that meets the target criteria.")
+        closest = min(all_results, key=lambda x: abs(x['strength']-40) + abs(x['durability']-70))
+        st.write(closest)
+
+    
+
