@@ -1,5 +1,5 @@
 # climacrete-systems
-F25 Duke University AI Hackathon
+[F25 Duke University AI Hackathon](https://duke-ai-hackathon-2025.devpost.com/project-gallery)
 ![smartcrete](imgs/smart-crete.png)
 
 --
@@ -15,5 +15,8 @@ F25 Duke University AI Hackathon
 
 --
 ## Charts
+<div style="background-color: #FFFF">
+
 ![Durability ML Model Chart](imgs/durability_output.png "Durability ML Model Chart")
 ![Strength ML Model Chart](imgs/strength_output.png "Strength ML Model Chart")
+</div>

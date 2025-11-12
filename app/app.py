@@ -376,7 +376,7 @@ if st.sidebar.button("Predict Performance"):
 # ----------------------------
 st.markdown("## ♻️ ML-Recommended Optimal Mix Design")
 st.markdown("The system searches for a mix with the lowest CO₂ impact that still meets structural performance requirements (≥40 MPa, ≥70 durability).")
-st.markdown("Enter in your preferred mix and hit this button to get a comparison chart.")
+st.markdown("Enter in your preferred mix and hit this button to get a comparison chart. (This takes a while to run)")
 
 if st.button("Find Optimal Mix"):
     cement_range = np.linspace(250, 600, 15)
@@ -483,7 +483,6 @@ if st.button("Find Optimal Mix"):
         ax.set_facecolor("#224130")
         fig4.patch.set_facecolor("#224130")
 
-        # Annotate bars with numeric values
         for rects in [rects1, rects2]:
             for r in rects:
                 ax.text(
